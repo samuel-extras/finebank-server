@@ -47,7 +47,7 @@ const registerUser = async (req, res) => {
   const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET);
 
   // Return the token to the client
-  res.status(200).json({ _id: user._id, name, email, token });
+  res.status(200).json({ _id: newUser._id, name, email, token });
 };
 
 const loginUser = async (req, res) => {
