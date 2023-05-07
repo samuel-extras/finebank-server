@@ -19,6 +19,12 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    phoneNumber: {
+      type: String,
+    },
+    username: {
+      type: String,
+    },
   },
   {
     timestamps: true,

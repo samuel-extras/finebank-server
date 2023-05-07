@@ -215,6 +215,132 @@ const updatePassword = async (req, res) => {
     res.status(500).send("Server error");
   }
 };
+const authUpdatePassword = async (req, res) => {
+  // Find the user with the given reset token
+  const { currentPassword, newPassword } = req.body;
+
+  const user = await userModel.findById(req.user._id);
+  if (!user) {
+    return res.status(404).json({ error: "User not found" });
+  }
+
+  const isMatch = await bcrypt.compare(currentPassword, user.password);
+  if (!isMatch) {
+    return res.status(400).json({ error: "Current password is incorrect" });
+  }
+
+  try {
+    // Update the user's password in the database
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+    user.password = hashedPassword;
+    await user.save();
+
+    // Return a success message to the client
+    res.json({ msg: "Password updated successfully" });
+  } catch (error) {
+    // console.error(error.message);
+    res.status(500).send("Server error");
+  }
+};
+const updateUser = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const update = req.body;
+
+    if (update.email) {
+      return res.status(400).json({ error: "cannot update email" });
+    }
+    if (update.password) {
+      return res.status(400).json({ error: "cannot update password" });
+    }
+
+    if (update.phoneNumber) {
+      userModel.findOne(
+        { phoneNumber: update.phoneNumber },
+        (err, existingUser) => {
+          if (err) {
+            // handle error
+            console.log(err);
+            return res.status(500).json({ error: "Something went wrong", err });
+          }
+
+          if (existingUser && !existingUser._id.equals(userId)) {
+            // phone number already exists for another user
+            return res
+              .status(400)
+              .json({ error: "Phone number is already taken" });
+          }
+
+          userModel.findByIdAndUpdate(
+            userId,
+            update,
+            { new: true },
+            (err, updatedUser) => {
+              if (err) {
+                // handle error  console.log(err);
+                console.log(err);
+                return res
+                  .status(500)
+                  .json({ error: "Something went wrong", err });
+              }
+
+              res.json({ message: "User information updated successfully" });
+            }
+          );
+        }
+      );
+    } else if (update.username) {
+      userModel.findOne({ username: update.username }, (err, existingUser) => {
+        if (err) {
+          // handle error
+          console.log(err);
+          return res.status(500).json({ error: "Something went wrong", err });
+        }
+
+        if (existingUser && !existingUser._id.equals(userId)) {
+          // username already exists for another user
+          return res.status(400).json({ error: "Username is already taken" });
+        }
+
+        userModel.findByIdAndUpdate(
+          userId,
+          update,
+          { new: true },
+          (err, updatedUser) => {
+            if (err) {
+              // handle error
+              console.log(err);
+              return res
+                .status(500)
+                .json({ error: "Something went wrong", err });
+            }
+
+            res.json({ message: "User information updated successfully" });
+          }
+        );
+      });
+    } else {
+      userModel.findByIdAndUpdate(
+        userId,
+        update,
+        { new: true },
+        (err, updatedUser) => {
+          if (err) {
+            // handle error
+            console.log(err);
+            return res.status(500).json({ error: "Something went wrong", err });
+          }
+
+          res.json({ message: "User information updated successfully" });
+        }
+      );
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
 
 module.exports = {
   registerUser,
@@ -224,4 +350,6 @@ module.exports = {
   resetPassword,
   updatePassword,
   auth,
+  authUpdatePassword,
+  updateUser,
 };
